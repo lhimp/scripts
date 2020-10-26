@@ -45,11 +45,12 @@ chemin <- function(
   rootPath = c(),
   githubCredentials = list(),
   usingDropboxRootPath = F,
-  readData = T,
+  readData = F,
+  printSourcingInfo = F,
   options = list(
-    xlsSheetNo = 1,
-    csvSeparator = ','
-  )
+      xlsSheetNo = 1,
+      csvSeparator = ','
+    )
   )
   {
     regexMatch <- function(patt, x) { return(length(grep(patt, x, ignore.case = T)) == 1) }
@@ -70,88 +71,60 @@ chemin <- function(
       pathComponents <- c(pathComponents, rootPath, relPath, fileName)
       chmn <<- paste(pathComponents, collapse = '/')
     }
-  
-    if ( readData ) {
+    
+    sourceFunc <- NULL
+    sourceArgs <- NULL
+    sourceData <- NULL
+    conn <- NULL
+    xlsConn <- NULL
+    rdsFilePattern <- "\\.RDS$"
+    xlsFilePattern <- "\\.xlsx?$"
+    csvFilePattern <- "\\.csv$"
+    rFilePattern <- "\\.R$"
+    isUrl <- regexMatch("://", chmn)
+    
+    if ( regexMatch(rdsFilePattern, chmn) ) {
       conn <- file(chmn)
-      rdsFilePattern <- "\\.RDS$"
-      xlsFilePattern <- "\\.xlsx?$"
-      csvFilePattern <- "\\.csv$"
-      rFilePattern <- "\\.R$"
-      isUrl <- regexMatch("://", chmn)
-      data <- T
-      
-      if ( regexMatch(rdsFilePattern, chmn) ) {
-        data <- readRDS(conn)
-      } else
-        if ( regexMatch(csvFilePattern, chmn) )   {
-          data <- read.csv(conn, sep = options$csvSeparator)
-      } else
-      if ( regexMatch(xlsFilePattern, chmn) )   {
-        if ( isUrl ) {
-          conn <- tempfile(fileext = ".xlsx")
-          req <- GET(chmn, write_disk(path = conn))
-        } else {
-          conn <- chmn
-        }
-        data <- read_excel(conn, options$xlsSheetNo)
-      } else
+      sourceFunc <- "readRDS"
+      sourceArgs <- list(file = conn)
+    } else
+      if ( regexMatch(csvFilePattern, chmn) )   {
+        sourceFunc <- "read.csv"
+        sourceArgs <- list(file = chmn, sep = options$csvSeparator)
+    } else
+    if ( regexMatch(xlsFilePattern, chmn) )   {
       if ( isUrl ) {
-        source_url(chmn)
+        tmpfilepath <- tempfile(fileext = ".xlsx")
+        req <- GET(chmn, write_disk(path = tmpfilepath))
+        sourceArgs <- list(path = tmpfilepath, sheet = options$xlsSheetNo)
+      } else {
+        sourceArgs <- list(path = chmn, sheet = options$xlsSheetNo)
       }
-      else {
-        source(conn)
+      sourceFunc <- "read_excel"
+      
+    } else
+    if ( isUrl ) {
+      sourceFunc <- "source_url"
+      sourceArgs <- list(url = chmn)
+    }
+    else {
+      conn <- file(chmn)
+      sourceFunc <- "source"
+      sourceArgs <- list(file = conn)
+    }
+    
+    if ( printSourcingInfo ) {
+      cat(sprintf("CHEMIN : \"%s\"\nFONCTION À APPELER POUR LECTURE: %s\n", chmn, sourceFunc))
+    }
+    
+    if ( readData ) {
+      # Hide SHA1 hash message
+      sourceData <- suppressMessages(do.call(sourceFunc, sourceArgs))
+      if ( !is.null(conn) ) {
+        close(conn)
       }
-      
-      return(data)
-      
+      return(sourceData)
     } else {
-      print(chmn)
       return(chmn)
     }
-}
-
-fileExts <- c("R", "RDS", "csv", "xlsx")
-runTests <- function() {
-  for ( j in 1:length(fileExts) ) {
-    fileExt <- fileExts[[j]]
-    
-    fileName <- sprintf("test.%s", fileExt)
-    relPath <- c("Revalidation", "test")
-    rootPath <- c("Users", "p0070611", "Documents", "Visual Studio 2017", "Projects", "WebexpoValidation")
-    repoName <- "webexpo_cs_validation"
-    dropboxRootPath <- c(repoName)
-    githubCred <- list(userName = "webexpo", repoName = repoName)
-    
-    caseNo <- 1
-    varName <- sprintf("data.case%d.%s", caseNo, fileExt)
-    print(sprintf("Case %d: Ext \"%s\"", caseNo, fileExt))
-    assign(varName,
-           chemin(fileName = fileName, relPath = relPath),
-           envir = .GlobalEnv)
-    print(get(varName))
-    
-    caseNo <- 2
-    varName <- sprintf("data.case%d.%s", caseNo, fileExt)
-    print(sprintf("Case %d: Ext \"%s\"", caseNo, fileExt))
-    assign(varName,
-           chemin(fileName = fileName, relPath = relPath, githubCredentials = githubCred),
-           envir = .GlobalEnv)
-    print(get(varName))
-    
-    caseNo <- 3
-    varName <- sprintf("data.case%d.%s", caseNo, fileExt)
-    print(sprintf("Case %d: Ext \"%s\"", caseNo, fileExt))
-    assign(varName, 
-           chemin(fileName = fileName, relPath = relPath, rootPath = rootPath),
-           envir = .GlobalEnv)
-    print(get(varName))
-    
-    caseNo <- 4
-    varName <- sprintf("data.case%d.%s", caseNo, fileExt)
-    print(sprintf("Case 4: Ext \"%s\"", fileExt))
-    assign(varName, 
-           chemin(fileName = fileName, relPath = relPath, rootPath = dropboxRootPath, usingDropboxRootPath = T),
-           envir = .GlobalEnv)
-    print(get(varName))
-  }
 }
