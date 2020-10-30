@@ -81,6 +81,7 @@ chemin <- function(
     xlsFilePattern <- "\\.xlsx?$"
     csvFilePattern <- "\\.csv$"
     rFilePattern <- "\\.R$"
+    readingR <- F
     isUrl <- regexMatch("://", chmn)
     
     if ( regexMatch(rdsFilePattern, chmn) ) {
@@ -108,6 +109,7 @@ chemin <- function(
       sourceArgs <- list(url = chmn)
     }
     else {
+      readingR <- T
       conn <- file(chmn)
       sourceFunc <- "source"
       sourceArgs <- list(file = conn)
@@ -123,8 +125,9 @@ chemin <- function(
       if ( !is.null(conn) ) {
         close(conn)
       }
-      return(sourceData)
-    } else {
-      return(chmn)
+      if ( !readingR ) {
+        return(sourceData)
+      }
     }
+    return(chmn)
 }
