@@ -128,6 +128,7 @@ chemin <- function(
       if ( !readingR ) {
         return(sourceData)
       }
+    } else {
+      return(chmn)
     }
-    return(chmn)
 }
