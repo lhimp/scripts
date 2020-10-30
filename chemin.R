@@ -114,7 +114,7 @@ chemin <- function(
     }
     
     if ( printSourcingInfo ) {
-      cat(sprintf("CHEMIN : \"%s\"\nFONCTION À APPELER POUR LECTURE: %s\n", chmn, sourceFunc))
+      cat(sprintf("FONCTION À APPELER POUR LECTURE: %s\n", sourceFunc))
     }
     
     if ( readData ) {
