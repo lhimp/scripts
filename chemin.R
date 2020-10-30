@@ -54,14 +54,14 @@ chemin <- function(
   )
   {
     regexMatch <- function(patt, x) { return(length(grep(patt, x, ignore.case = T)) == 1) }
+    chmn <- ""
     
     if ( length(rootPath) == 0 && !usingDropboxRootPath && length(githubCredentials) == 0 ) {
-      l <- as.list(c(relPath, fileName))
-      chmn <<- do.call(here, l)
+      chmn <- do.call("here", as.list(c(relPath, fileName)))
     } else
     if ( length(githubCredentials) == 2 ) {
       githubPathComponents <- c("https:/", "github.com", githubCredentials$userName, githubCredentials$repoName, "raw", "master", relPath, fileName)
-      chmn <<- URLencode(paste(githubPathComponents, collapse = '/'))
+      chmn <- URLencode(paste(githubPathComponents, collapse = '/'))
     } else {
       if ( usingDropboxRootPath ) {
         pathComponents <- c(strsplit(Sys.getenv('USERPROFILE'), '\\\\|/')[[1]], 'Dropbox')
@@ -69,7 +69,7 @@ chemin <- function(
         pathComponents <- c("C:")
       }
       pathComponents <- c(pathComponents, rootPath, relPath, fileName)
-      chmn <<- paste(pathComponents, collapse = '/')
+      chmn <- paste(pathComponents, collapse = '/')
     }
     
     sourceFunc <- NULL
