@@ -45,7 +45,7 @@ chemin <- function(
   rootPath = c(),
   githubCredentials = list(),
   usingDropboxRootPath = F,
-  readData = F,
+  read = T,
   printSourcingInfo = F,
   options = list(
       xlsSheetNo = 1,
@@ -119,7 +119,7 @@ chemin <- function(
       cat(sprintf("FONCTION À APPELER POUR LECTURE: %s\n", sourceFunc))
     }
     
-    if ( readData ) {
+    if ( read ) {
       # Hide SHA1 hash message
       sourceData <- suppressMessages(do.call(sourceFunc, sourceArgs))
       if ( !is.null(conn) ) {
